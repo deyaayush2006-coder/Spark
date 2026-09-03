@@ -4,7 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+<<<<<<< HEAD
   const next = searchParams.get('next') ?? '/profile/setup'
+=======
+  const rawNext = searchParams.get('next') ?? '/profile/setup'
+  // Only allow a same-site relative path (must start with exactly one '/',
+  // never '//' which some browsers treat as protocol-relative) so this
+  // can't be used to redirect a user off-site after login.
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/profile/setup'
+>>>>>>> 2335d4b (version 2.0)
 
   if (code) {
     const supabase = await createClient()

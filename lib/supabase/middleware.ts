@@ -41,6 +41,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+<<<<<<< HEAD
   if (
     // if the user is not logged in and the app path, in this case, /protected, is accessed, redirect to the login page
     request.nextUrl.pathname.startsWith('/protected') &&
@@ -51,6 +52,10 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
   }
+=======
+  // (Route protection for this app lives in the top-level middleware.ts,
+  // which needs the `user` value below — so it's handled there, not here.)
+>>>>>>> 2335d4b (version 2.0)
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
@@ -65,5 +70,13 @@ export async function updateSession(request: NextRequest) {
   // If this is not done, you may be causing the browser and server to go out
   // of sync and terminate the user's session prematurely!
 
+<<<<<<< HEAD
   return supabaseResponse
+=======
+  // middleware.ts destructures { response, user } from this call, so both
+  // must be returned — previously only the response was returned, which
+  // made `user` always undefined there and caused every request (including
+  // signed-in ones) to be redirected to /auth/login.
+  return { response: supabaseResponse, user }
+>>>>>>> 2335d4b (version 2.0)
 }

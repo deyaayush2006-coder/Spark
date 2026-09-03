@@ -7,6 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, Send, Heart } from 'lucide-react'
+<<<<<<< HEAD
+=======
+import { CallButtons } from '@/components/call-buttons'
+import { ReportMenu } from '@/components/report-menu'
+>>>>>>> 2335d4b (version 2.0)
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
@@ -19,6 +24,7 @@ interface ChatRoomProps {
   initialMessages: Message[]
 }
 
+<<<<<<< HEAD
 // Bot responses for testing
 const BOT_RESPONSES = [
   "Hey! How's your day going?",
@@ -33,6 +39,8 @@ const BOT_RESPONSES = [
   "I feel like we have a lot in common!",
 ]
 
+=======
+>>>>>>> 2335d4b (version 2.0)
 export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [newMessage, setNewMessage] = useState('')
@@ -48,9 +56,14 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
   }, [messages])
 
   useEffect(() => {
+<<<<<<< HEAD
     // Subscribe to realtime messages
     const supabase = createClient()
     
+=======
+    const supabase = createClient()
+
+>>>>>>> 2335d4b (version 2.0)
     const channel = supabase
       .channel(`messages:${matchId}`)
       .on(
@@ -63,10 +76,25 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
         },
         (payload) => {
           const newMsg = payload.new as Message
+<<<<<<< HEAD
           if (newMsg.sender_id !== currentUserId) {
             setMessages(prev => [...prev, newMsg])
           }
         }
+=======
+          // De-duplicate by message id rather than by sender.
+          //
+          // The old version skipped anything sent by the current user, which
+          // broke two real cases: the same account open in a second tab never
+          // saw its own messages appear, and a message that was inserted but
+          // whose optimistic append failed was lost until a refresh. Checking
+          // the id handles both, and still prevents the double-append that the
+          // sender-check was there to avoid.
+          setMessages((prev) =>
+            prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg],
+          )
+        },
+>>>>>>> 2335d4b (version 2.0)
       )
       .subscribe()
 
@@ -93,11 +121,18 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
       .single()
 
     if (error) {
+<<<<<<< HEAD
       toast.error('Failed to send message')
+=======
+      // RLS also refuses inserts between blocked users, so give a message that
+      // covers that case instead of a bare "failed".
+      toast.error('Message not sent. You may have been blocked, or the connection dropped.')
+>>>>>>> 2335d4b (version 2.0)
       setSending(false)
       return
     }
 
+<<<<<<< HEAD
     setMessages(prev => [...prev, data])
     setNewMessage('')
     setSending(false)
@@ -119,36 +154,98 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
 
         if (botMessage) {
           setMessages(prev => [...prev, botMessage])
+=======
+    setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]))
+    setNewMessage('')
+    setSending(false)
+
+    // If chatting with a bot, ask the server to send a simulated reply.
+    // This goes through /api/bot-reply rather than inserting directly,
+    // because RLS (correctly) blocks a signed-in client from inserting a
+    // message with someone else's sender_id — only a verified server route
+    // is allowed to do that, and only for confirmed bot matches.
+    if (otherUser.is_bot) {
+      setTimeout(async () => {
+        try {
+          const res = await fetch('/api/bot-reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ matchId }),
+          })
+          if (res.ok) {
+            const { message: botMessage } = await res.json()
+            if (botMessage) {
+              setMessages((prev) =>
+                prev.some((m) => m.id === botMessage.id) ? prev : [...prev, botMessage],
+              )
+            }
+          }
+        } catch {
+          // Silently ignore — a missed bot reply isn't worth surfacing an error for.
+>>>>>>> 2335d4b (version 2.0)
         }
       }, 1000 + Math.random() * 2000)
     }
   }
 
+<<<<<<< HEAD
   const photo = otherUser.photos?.[0] || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'
+=======
+  const photo = otherUser.photos?.[0] || '/placeholder-user.jpg'
+>>>>>>> 2335d4b (version 2.0)
 
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
+<<<<<<< HEAD
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center gap-3">
+=======
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center gap-2">
+>>>>>>> 2335d4b (version 2.0)
         <Button variant="ghost" size="icon" asChild>
           <Link href="/matches">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
+<<<<<<< HEAD
         <Link href={`/profile/${otherUser.id}`} className="flex items-center gap-3 flex-1">
           <Avatar>
             <AvatarImage src={photo} />
+=======
+
+        <Link href={`/profile/${otherUser.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+          <Avatar>
+            <AvatarImage src={photo} alt="" />
+>>>>>>> 2335d4b (version 2.0)
             <AvatarFallback className="love-gradient text-primary-foreground">
               {otherUser.name?.[0]}
             </AvatarFallback>
           </Avatar>
+<<<<<<< HEAD
           <div>
             <h1 className="font-semibold">{otherUser.name}</h1>
             <p className="text-xs text-muted-foreground">
+=======
+          <div className="min-w-0">
+            <h1 className="font-semibold truncate">{otherUser.name}</h1>
+            <p className="text-xs text-muted-foreground truncate">
+>>>>>>> 2335d4b (version 2.0)
               {otherUser.location || 'Nearby'}
             </p>
           </div>
         </Link>
+<<<<<<< HEAD
+=======
+
+        <CallButtons
+          matchId={matchId}
+          currentUserId={currentUserId}
+          otherUserId={otherUser.id}
+          disabled={otherUser.is_bot}
+        />
+
+        <ReportMenu reportedId={otherUser.id} reportedName={otherUser.name} matchId={matchId} />
+>>>>>>> 2335d4b (version 2.0)
       </header>
 
       {/* Messages */}
@@ -165,14 +262,24 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
 
         {messages.map((message, index) => {
           const isOwn = message.sender_id === currentUserId
+<<<<<<< HEAD
           const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id)
           
+=======
+          const showAvatar =
+            !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id)
+
+>>>>>>> 2335d4b (version 2.0)
           return (
             <div
               key={message.id}
               className={cn(
                 'flex items-end gap-2 animate-slide-up',
+<<<<<<< HEAD
                 isOwn ? 'justify-end' : 'justify-start'
+=======
+                isOwn ? 'justify-end' : 'justify-start',
+>>>>>>> 2335d4b (version 2.0)
               )}
               style={{ animationDelay: `${index * 0.02}s` }}
             >
@@ -180,12 +287,17 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
                 <div className="w-8">
                   {showAvatar && (
                     <Avatar className="w-8 h-8">
+<<<<<<< HEAD
                       <AvatarImage src={photo} />
+=======
+                      <AvatarImage src={photo} alt="" />
+>>>>>>> 2335d4b (version 2.0)
                       <AvatarFallback className="text-xs">{otherUser.name?.[0]}</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
               )}
+<<<<<<< HEAD
               <div
                 className={cn(
                   'max-w-[70%] px-4 py-2',
@@ -197,6 +309,16 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
                   'text-[10px] block mt-1',
                   isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
                 )}>
+=======
+              <div className={cn('max-w-[70%] px-4 py-2', isOwn ? 'message-sent' : 'message-received')}>
+                <p className="break-words">{message.content}</p>
+                <span
+                  className={cn(
+                    'text-[10px] block mt-1',
+                    isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground',
+                  )}
+                >
+>>>>>>> 2335d4b (version 2.0)
                   {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                 </span>
               </div>
@@ -214,6 +336,10 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
             className="flex-1"
+<<<<<<< HEAD
+=======
+            maxLength={2000}
+>>>>>>> 2335d4b (version 2.0)
             disabled={sending}
           />
           <Button

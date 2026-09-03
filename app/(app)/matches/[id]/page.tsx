@@ -14,8 +14,13 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     .from('matches')
     .select(`
       *,
+<<<<<<< HEAD
       user1:profiles!matches_user1_id_fkey(*),
       user2:profiles!matches_user2_id_fkey(*)
+=======
+      user1:profiles!matches_user1_id_fkey(id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at),
+      user2:profiles!matches_user2_id_fkey(id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at)
+>>>>>>> 2335d4b (version 2.0)
     `)
     .eq('id', id)
     .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)

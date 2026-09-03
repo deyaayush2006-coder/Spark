@@ -90,7 +90,11 @@ export function SocialTabs({
         sender_id: currentUserId,
         receiver_id: receiverId,
       })
+<<<<<<< HEAD
       .select('*, receiver:profiles!friend_requests_receiver_id_fkey(*)')
+=======
+      .select('*, receiver:profiles!friend_requests_receiver_id_fkey(id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at)')
+>>>>>>> 2335d4b (version 2.0)
       .single()
 
     if (error) {

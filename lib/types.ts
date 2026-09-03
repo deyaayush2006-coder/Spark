@@ -11,6 +11,14 @@ export interface Profile {
   photos: string[] | null
   instagram_url: string | null
   spotify_url: string | null
+<<<<<<< HEAD
+=======
+  // ADDED: the column exists in the schema and every profile query already
+  // selects it, but it was missing from this interface — so TypeScript
+  // silently thought `profile.is_verified` was an error anywhere you tried
+  // to use it.
+  is_verified: boolean
+>>>>>>> 2335d4b (version 2.0)
   is_bot: boolean
   created_at: string
   updated_at: string
@@ -29,6 +37,10 @@ export interface Match {
   user1_id: string
   user2_id: string
   matched_at: string
+<<<<<<< HEAD
+=======
+  is_active: boolean
+>>>>>>> 2335d4b (version 2.0)
   profile?: Profile
 }
 
@@ -41,6 +53,51 @@ export interface Message {
   created_at: string
 }
 
+<<<<<<< HEAD
+=======
+export type CallKind = 'audio' | 'video'
+export type CallStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed'
+
+export interface Call {
+  id: string
+  match_id: string
+  caller_id: string
+  callee_id: string
+  kind: CallKind
+  status: CallStatus
+  room_name: string
+  created_at: string
+  answered_at: string | null
+  ended_at: string | null
+}
+
+export interface Block {
+  id: string
+  blocker_id: string
+  blocked_id: string
+  created_at: string
+}
+
+export type ReportReason =
+  | 'harassment'
+  | 'inappropriate_photos'
+  | 'spam_or_scam'
+  | 'fake_profile'
+  | 'underage'
+  | 'other'
+
+export interface Report {
+  id: string
+  reporter_id: string
+  reported_id: string
+  match_id: string | null
+  reason: ReportReason
+  details: string | null
+  status: 'open' | 'reviewing' | 'actioned' | 'dismissed'
+  created_at: string
+}
+
+>>>>>>> 2335d4b (version 2.0)
 export interface Follower {
   id: string
   follower_id: string

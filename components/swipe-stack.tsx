@@ -6,7 +6,11 @@ import { SwipeCard } from '@/components/swipe-card'
 import { MatchModal } from '@/components/match-modal'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+<<<<<<< HEAD
 import { Heart, Frown } from 'lucide-react'
+=======
+import { Heart } from 'lucide-react'
+>>>>>>> 2335d4b (version 2.0)
 
 interface SwipeStackProps {
   profiles: Profile[]
@@ -18,6 +22,7 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null)
   const [showMatchModal, setShowMatchModal] = useState(false)
 
+<<<<<<< HEAD
   const handleSwipe = useCallback(async (profile: Profile, direction: 'left' | 'right' | 'super') => {
     const supabase = createClient()
 
@@ -41,16 +46,67 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
         .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
         .or(`user1_id.eq.${profile.id},user2_id.eq.${profile.id}`)
         .single()
+=======
+  const handleSwipe = useCallback(
+    async (profile: Profile, direction: 'left' | 'right' | 'super') => {
+      const supabase = createClient()
+
+      // Remove from the stack immediately so the UI stays responsive and a
+      // slow network can't let the same card be swiped twice.
+      setStack((prev) => prev.filter((p) => p.id !== profile.id))
+
+      const { error } = await supabase.from('swipes').insert({
+        swiper_id: currentUserId,
+        swiped_id: profile.id,
+        direction,
+      })
+
+      if (error) {
+        // 23505 = unique violation, i.e. already swiped on this person.
+        // That's harmless and shouldn't produce a scary toast.
+        if (error.code !== '23505') {
+          toast.error('Failed to record swipe')
+        }
+        return
+      }
+
+      if (direction !== 'right' && direction !== 'super') return
+
+      // The database trigger create_match_on_mutual_like() has already run
+      // inside the same transaction as the insert above, so if a match was
+      // going to be created it exists by now.
+      //
+      // The match row always stores the two ids as LEAST/GREATEST, so look it
+      // up by that exact pair. The previous version chained two .or() calls,
+      // which PostgREST ANDs into a much looser condition — it could match a
+      // completely unrelated match row involving either person and pop the
+      // "It's a match!" modal for the wrong profile.
+      const [user1, user2] =
+        currentUserId < profile.id ? [currentUserId, profile.id] : [profile.id, currentUserId]
+
+      const { data: match } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('user1_id', user1)
+        .eq('user2_id', user2)
+        .maybeSingle() // maybeSingle: "no match yet" is the normal case, not an error
+>>>>>>> 2335d4b (version 2.0)
 
       if (match) {
         setMatchedProfile(profile)
         setShowMatchModal(true)
       }
+<<<<<<< HEAD
     }
 
     // Remove from stack
     setStack(prev => prev.filter(p => p.id !== profile.id))
   }, [currentUserId])
+=======
+    },
+    [currentUserId],
+  )
+>>>>>>> 2335d4b (version 2.0)
 
   if (stack.length === 0) {
     return (

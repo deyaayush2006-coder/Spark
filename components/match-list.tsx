@@ -93,7 +93,11 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
                       {match.profile?.name?.[0]}
                     </AvatarFallback>
                   </Avatar>
+<<<<<<< HEAD
                   {match.unreadCount > 0 && (
+=======
+                  {(match.unreadCount ?? 0) > 0 && (
+>>>>>>> 2335d4b (version 2.0)
                     <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center love-gradient border-0">
                       {match.unreadCount}
                     </Badge>
@@ -109,7 +113,11 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
                     )}
                   </div>
                   {match.lastMessage && (
+<<<<<<< HEAD
                     <p className={`text-sm truncate ${match.unreadCount > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+=======
+                    <p className={`text-sm truncate ${(match.unreadCount ?? 0) > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+>>>>>>> 2335d4b (version 2.0)
                       {match.lastMessage.sender_id === currentUserId ? 'You: ' : ''}
                       {match.lastMessage.content}
                     </p>

@@ -49,7 +49,11 @@ export default function EditProfilePage() {
 
       const { data } = await supabase
         .from('profiles')
+<<<<<<< HEAD
         .select('*')
+=======
+        .select('id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at')
+>>>>>>> 2335d4b (version 2.0)
         .eq('id', user.id)
         .single()
 
@@ -76,6 +80,7 @@ export default function EditProfilePage() {
     if (!files || files.length === 0) return
 
     setUploadingPhoto(true)
+<<<<<<< HEAD
 
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) {
@@ -90,6 +95,50 @@ export default function EditProfilePage() {
         }
       }
       reader.readAsDataURL(file)
+=======
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      toast.error('Please sign in first')
+      setUploadingPhoto(false)
+      return
+    }
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+    for (const file of Array.from(files)) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error(`${file.name}: please upload a JPEG, PNG, WebP, or GIF image`)
+        continue
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name}: image must be under 5MB`)
+        continue
+      }
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
+
+      // Upload to Supabase Storage rather than embedding a base64 data URL —
+      // storing raw image bytes directly in the profiles row had no size
+      // limit and would bloat the database with megabytes per photo.
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        toast.error(`Failed to upload ${file.name}: ${uploadError.message}`)
+        continue
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName)
+      setPhotos(prev => [...prev, publicUrl])
+>>>>>>> 2335d4b (version 2.0)
     }
 
     setUploadingPhoto(false)
@@ -130,6 +179,10 @@ export default function EditProfilePage() {
         photos: photos,
         instagram_url: formData.instagramUrl || null,
         spotify_url: formData.spotifyUrl || null,
+<<<<<<< HEAD
+=======
+        updated_at: new Date().toISOString(),
+>>>>>>> 2335d4b (version 2.0)
       })
       .eq('id', profile.id)
 
