@@ -54,7 +54,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center justify-between">
+      <header className="sticky top-0 md:top-20 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center justify-between">
         <h1 className="text-2xl font-serif font-bold love-gradient-text">Profile</h1>
         {isOwnProfile && (
           <div className="flex items-center gap-2">
@@ -130,21 +130,21 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-3 gap-4 p-4 border-b">
-          <Link href="/matches" className="text-center">
+          <Link href="/matches" className="text-center press transition-transform duration-200 hover:scale-110">
             <div className="text-2xl font-serif font-bold love-gradient-text">{stats.matches}</div>
             <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
               <Heart className="h-4 w-4" />
               Matches
             </div>
           </Link>
-          <Link href="/social" className="text-center">
+          <Link href="/social" className="text-center press transition-transform duration-200 hover:scale-110">
             <div className="text-2xl font-serif font-bold">{stats.followers}</div>
             <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
               <Users className="h-4 w-4" />
               Followers
             </div>
           </Link>
-          <Link href="/social" className="text-center">
+          <Link href="/social" className="text-center press transition-transform duration-200 hover:scale-110">
             <div className="text-2xl font-serif font-bold">{stats.following}</div>
             <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
               <UserPlus className="h-4 w-4" />
@@ -157,7 +157,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
       {/* Bio */}
       <div className="p-4 space-y-4">
         {profile.bio && (
-          <Card className="animate-slide-up">
+          <Card className="animate-slide-up transition-shadow duration-200 hover:shadow-md">
             <CardContent className="pt-4">
               <h3 className="font-serif font-semibold mb-2">About</h3>
               <p className="text-muted-foreground leading-relaxed bio-text">
@@ -169,7 +169,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
 
         {/* Interests */}
         {profile.interests && profile.interests.length > 0 && (
-          <Card className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <Card className="animate-slide-up transition-shadow duration-200 hover:shadow-md" style={{ animationDelay: '0.1s' }}>
             <CardContent className="pt-4">
               <h3 className="font-serif font-semibold mb-3">Interests</h3>
               <div className="flex flex-wrap gap-2">
@@ -177,7 +177,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
                   <Badge 
                     key={interest} 
                     variant="secondary"
-                    className="px-3 py-1 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
+                    className="px-3 py-1 hover:bg-primary hover:text-primary-foreground transition-all duration-200 cursor-default hover:-translate-y-0.5 hover:scale-105"
                   >
                     {interest}
                   </Badge>
@@ -189,7 +189,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
 
         {/* Social Links */}
         {(profile.instagram_url || profile.spotify_url) && (
-          <Card className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <Card className="animate-slide-up transition-shadow duration-200 hover:shadow-md" style={{ animationDelay: '0.2s' }}>
             <CardContent className="pt-4">
               <h3 className="font-serif font-semibold mb-3">Social</h3>
               <div className="flex gap-3">
@@ -198,7 +198,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
                     href={profile.instagram_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white hover:opacity-90 transition-all duration-200 hover:scale-105 hover:shadow-lg press"
                   >
                     <Instagram className="h-5 w-5" />
                     Instagram
@@ -209,7 +209,7 @@ export function ProfileView({ profile, isOwnProfile, stats }: ProfileViewProps) 
                     href={profile.spotify_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1DB954] text-white hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1DB954] text-white hover:opacity-90 transition-all duration-200 hover:scale-105 hover:shadow-lg press"
                   >
                     <Music className="h-5 w-5" />
                     Spotify

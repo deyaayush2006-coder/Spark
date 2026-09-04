@@ -9,8 +9,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+
+// Bump this whenever the Terms change materially, so you can tell which
+// users agreed to which version.
+const TERMS_VERSION = '2026-09-04'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -24,19 +29,57 @@ export default function SignUpPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Two separate boxes, neither pre-ticked. A single bundled "I agree to
+  // everything" tick is weak evidence of consent, and pre-ticking it is not
+  // consent at all under the DPDP Act or the GDPR. The 18+ attestation is
+  // kept distinct from the Terms because it is the one representation we
+  // most need to be able to point at later.
+  const [confirmedAge, setConfirmedAge] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (parseInt(formData.age) < 18) {
+
+    // `required` on a Radix <Select> does nothing — it renders a button, not a
+    // <select>, so the browser never validates it. Without these checks an
+    // empty gender/interested_in reached profile setup, where `|| 'other'` and
+    // `|| 'everyone'` silently rewrote the user's answer to something they
+    // never picked. Validate explicitly.
+    const age = Number.parseInt(formData.age, 10)
+
+    if (!Number.isFinite(age)) {
+      toast.error('Please enter your age')
+      return
+    }
+    if (age < 18) {
       toast.error('You must be 18 or older to use Spark')
+      return
+    }
+    if (age > 120) {
+      toast.error('Please enter a valid age')
+      return
+    }
+    if (!formData.gender) {
+      toast.error('Please select your gender')
+      return
+    }
+    if (!formData.interestedIn) {
+      toast.error('Please choose who you are interested in')
+      return
+    }
+    if (!confirmedAge) {
+      toast.error('You must confirm that you are 18 or older')
+      return
+    }
+    if (!acceptedTerms) {
+      toast.error('Please accept the Terms & Conditions and Privacy Policy')
       return
     }
 
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
       options: {
@@ -47,6 +90,12 @@ export default function SignUpPage() {
           age: parseInt(formData.age),
           gender: formData.gender,
           interested_in: formData.interestedIn,
+          // Recorded on the account so there is a durable record of what was
+          // agreed and when, rather than only a tick that vanished with the
+          // form. Update terms_version whenever the Terms materially change.
+          age_confirmed_at: new Date().toISOString(),
+          terms_accepted_at: new Date().toISOString(),
+          terms_version: TERMS_VERSION,
         },
       },
     })
@@ -54,6 +103,14 @@ export default function SignUpPage() {
     if (error) {
       toast.error(error.message)
       setLoading(false)
+      return
+    }
+
+    // With email confirmation turned off in Supabase, signUp returns a live
+    // session and no email is sent — go straight into the app instead of
+    // parking the user on a "check your email" page that never resolves.
+    if (data.session) {
+      router.push('/discover')
       return
     }
 
@@ -182,10 +239,53 @@ export default function SignUpPage() {
           </CardContent>
           
           <CardFooter className="flex flex-col gap-4">
+            <div className="w-full space-y-3 rounded-xl border bg-muted/40 p-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={confirmedAge}
+                  onCheckedChange={(v) => setConfirmedAge(v === true)}
+                  disabled={loading}
+                  className="mt-0.5"
+                />
+                <span className="text-sm leading-relaxed">
+                  I confirm I am <strong>18 years of age or older</strong>.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={acceptedTerms}
+                  onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                  disabled={loading}
+                  className="mt-0.5"
+                />
+                <span className="text-sm leading-relaxed">
+                  I have read and agree to the{' '}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Terms &amp; Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Privacy Policy
+                  </Link>
+                  , including that Spark does not verify users and that meeting
+                  anyone is at my own risk.
+                </span>
+              </label>
+            </div>
+
             <Button 
               type="submit" 
               className="w-full love-gradient text-primary-foreground border-0"
-              disabled={loading}
+              disabled={loading || !confirmedAge || !acceptedTerms}
             >
               {loading ? (
                 <>

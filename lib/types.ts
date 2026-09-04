@@ -11,14 +11,11 @@ export interface Profile {
   photos: string[] | null
   instagram_url: string | null
   spotify_url: string | null
-<<<<<<< HEAD
-=======
   // ADDED: the column exists in the schema and every profile query already
   // selects it, but it was missing from this interface — so TypeScript
   // silently thought `profile.is_verified` was an error anywhere you tried
   // to use it.
   is_verified: boolean
->>>>>>> 2335d4b (version 2.0)
   is_bot: boolean
   created_at: string
   updated_at: string
@@ -37,10 +34,7 @@ export interface Match {
   user1_id: string
   user2_id: string
   matched_at: string
-<<<<<<< HEAD
-=======
   is_active: boolean
->>>>>>> 2335d4b (version 2.0)
   profile?: Profile
 }
 
@@ -53,8 +47,6 @@ export interface Message {
   created_at: string
 }
 
-<<<<<<< HEAD
-=======
 export type CallKind = 'audio' | 'video'
 export type CallStatus = 'ringing' | 'accepted' | 'declined' | 'ended' | 'missed'
 
@@ -97,7 +89,6 @@ export interface Report {
   created_at: string
 }
 
->>>>>>> 2335d4b (version 2.0)
 export interface Follower {
   id: string
   follower_id: string

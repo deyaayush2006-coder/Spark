@@ -7,11 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, Send, Heart } from 'lucide-react'
-<<<<<<< HEAD
-=======
 import { CallButtons } from '@/components/call-buttons'
 import { ReportMenu } from '@/components/report-menu'
->>>>>>> 2335d4b (version 2.0)
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
@@ -24,27 +21,45 @@ interface ChatRoomProps {
   initialMessages: Message[]
 }
 
-<<<<<<< HEAD
-// Bot responses for testing
-const BOT_RESPONSES = [
-  "Hey! How's your day going?",
-  "That's so interesting! Tell me more about yourself.",
-  "I love that! We should definitely meet up sometime.",
-  "You seem like such a fun person!",
-  "Haha, you're making me smile!",
-  "What do you like to do for fun?",
-  "I've been thinking about trying something new lately. Any suggestions?",
-  "That's really cool! I've always wanted to try that.",
-  "You have great taste!",
-  "I feel like we have a lot in common!",
-]
+/**
+ * The three-dot "typing..." bubble.
+ *
+ * Bot replies are already delayed 1-3s to feel human, but until now that
+ * delay was indistinguishable from the app having dropped the message. The
+ * indicator turns dead time into anticipation.
+ */
+function TypingBubble({ photo, name }: { photo: string; name?: string }) {
+  return (
+    <div className="flex items-end gap-2 justify-start animate-message-in-left">
+      <div className="w-8">
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={photo} alt="" />
+          <AvatarFallback className="text-xs">{name?.[0]}</AvatarFallback>
+        </Avatar>
+      </div>
+      <div className="message-received px-4 py-3" aria-label={`${name ?? 'They'} is typing`}>
+        <span className="flex items-center gap-1">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-current animate-typing-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+        </span>
+      </div>
+    </div>
+  )
+}
 
-=======
->>>>>>> 2335d4b (version 2.0)
 export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [botTyping, setBotTyping] = useState(false)
+  // Messages present on first render shouldn't fly in one by one - only
+  // things that arrive while you're watching should animate.
+  const initialCount = useRef(initialMessages.length)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -53,17 +68,11 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, botTyping])
 
   useEffect(() => {
-<<<<<<< HEAD
-    // Subscribe to realtime messages
-    const supabase = createClient()
-    
-=======
     const supabase = createClient()
 
->>>>>>> 2335d4b (version 2.0)
     const channel = supabase
       .channel(`messages:${matchId}`)
       .on(
@@ -76,12 +85,6 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
         },
         (payload) => {
           const newMsg = payload.new as Message
-<<<<<<< HEAD
-          if (newMsg.sender_id !== currentUserId) {
-            setMessages(prev => [...prev, newMsg])
-          }
-        }
-=======
           // De-duplicate by message id rather than by sender.
           //
           // The old version skipped anything sent by the current user, which
@@ -90,11 +93,11 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
           // whose optimistic append failed was lost until a refresh. Checking
           // the id handles both, and still prevents the double-append that the
           // sender-check was there to avoid.
+          if (newMsg.sender_id !== currentUserId) setBotTyping(false)
           setMessages((prev) =>
             prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg],
           )
         },
->>>>>>> 2335d4b (version 2.0)
       )
       .subscribe()
 
@@ -121,40 +124,13 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
       .single()
 
     if (error) {
-<<<<<<< HEAD
-      toast.error('Failed to send message')
-=======
       // RLS also refuses inserts between blocked users, so give a message that
       // covers that case instead of a bare "failed".
       toast.error('Message not sent. You may have been blocked, or the connection dropped.')
->>>>>>> 2335d4b (version 2.0)
       setSending(false)
       return
     }
 
-<<<<<<< HEAD
-    setMessages(prev => [...prev, data])
-    setNewMessage('')
-    setSending(false)
-
-    // If chatting with a bot, simulate a response
-    if (otherUser.is_bot) {
-      setTimeout(async () => {
-        const botResponse = BOT_RESPONSES[Math.floor(Math.random() * BOT_RESPONSES.length)]
-        
-        const { data: botMessage } = await supabase
-          .from('messages')
-          .insert({
-            match_id: matchId,
-            sender_id: otherUser.id,
-            content: botResponse,
-          })
-          .select()
-          .single()
-
-        if (botMessage) {
-          setMessages(prev => [...prev, botMessage])
-=======
     setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]))
     setNewMessage('')
     setSending(false)
@@ -165,6 +141,7 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
     // message with someone else's sender_id — only a verified server route
     // is allowed to do that, and only for confirmed bot matches.
     if (otherUser.is_bot) {
+      setBotTyping(true)
       setTimeout(async () => {
         try {
           const res = await fetch('/api/bot-reply', {
@@ -182,60 +159,44 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
           }
         } catch {
           // Silently ignore — a missed bot reply isn't worth surfacing an error for.
->>>>>>> 2335d4b (version 2.0)
+        } finally {
+          // Always clear it: a stuck "typing..." that never resolves is worse
+          // than no indicator at all.
+          setBotTyping(false)
         }
       }, 1000 + Math.random() * 2000)
     }
   }
 
-<<<<<<< HEAD
-  const photo = otherUser.photos?.[0] || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'
-=======
   const photo = otherUser.photos?.[0] || '/placeholder-user.jpg'
->>>>>>> 2335d4b (version 2.0)
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-[100dvh] md:h-[calc(100dvh-5rem)] bg-background">
       {/* Header */}
-<<<<<<< HEAD
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center gap-3">
-=======
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center gap-2">
->>>>>>> 2335d4b (version 2.0)
+      <header className="sticky top-0 md:top-20 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/matches">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 transition-transform hover:-translate-x-0.5" />
           </Link>
         </Button>
-<<<<<<< HEAD
-        <Link href={`/profile/${otherUser.id}`} className="flex items-center gap-3 flex-1">
-          <Avatar>
-            <AvatarImage src={photo} />
-=======
 
-        <Link href={`/profile/${otherUser.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-          <Avatar>
+        <Link
+          href={`/profile/${otherUser.id}`}
+          className="flex items-center gap-3 flex-1 min-w-0 rounded-lg transition-colors hover:bg-secondary/60 press"
+        >
+          <Avatar className="transition-transform duration-200 hover:scale-105">
             <AvatarImage src={photo} alt="" />
->>>>>>> 2335d4b (version 2.0)
             <AvatarFallback className="love-gradient text-primary-foreground">
               {otherUser.name?.[0]}
             </AvatarFallback>
           </Avatar>
-<<<<<<< HEAD
-          <div>
-            <h1 className="font-semibold">{otherUser.name}</h1>
-            <p className="text-xs text-muted-foreground">
-=======
           <div className="min-w-0">
             <h1 className="font-semibold truncate">{otherUser.name}</h1>
             <p className="text-xs text-muted-foreground truncate">
->>>>>>> 2335d4b (version 2.0)
-              {otherUser.location || 'Nearby'}
+              {botTyping ? 'typing…' : otherUser.location || 'Nearby'}
             </p>
           </div>
         </Link>
-<<<<<<< HEAD
-=======
 
         <CallButtons
           matchId={matchId}
@@ -245,15 +206,14 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
         />
 
         <ReportMenu reportedId={otherUser.id} reportedName={otherUser.name} matchId={matchId} />
->>>>>>> 2335d4b (version 2.0)
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar scroll-smooth">
         {messages.length === 0 && (
           <div className="text-center py-12 animate-fade-in">
-            <div className="w-20 h-20 rounded-full love-gradient flex items-center justify-center mx-auto mb-4">
-              <Heart className="h-10 w-10 text-primary-foreground fill-primary-foreground" />
+            <div className="w-20 h-20 rounded-full love-gradient flex items-center justify-center mx-auto mb-4 animate-float">
+              <Heart className="h-10 w-10 text-primary-foreground fill-primary-foreground animate-heartbeat" />
             </div>
             <h2 className="text-xl font-serif font-bold mb-2">You matched with {otherUser.name}!</h2>
             <p className="text-muted-foreground">Say something nice to break the ice.</p>
@@ -262,55 +222,46 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
 
         {messages.map((message, index) => {
           const isOwn = message.sender_id === currentUserId
-<<<<<<< HEAD
-          const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id)
-          
-=======
           const showAvatar =
             !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id)
+          // History fades up as one block; anything that lands after you
+          // opened the room springs in from its own side of the thread.
+          const isHistory = index < initialCount.current
 
->>>>>>> 2335d4b (version 2.0)
           return (
             <div
               key={message.id}
               className={cn(
-                'flex items-end gap-2 animate-slide-up',
-<<<<<<< HEAD
-                isOwn ? 'justify-end' : 'justify-start'
-=======
+                'flex items-end gap-2',
                 isOwn ? 'justify-end' : 'justify-start',
->>>>>>> 2335d4b (version 2.0)
+                isHistory
+                  ? 'animate-slide-up'
+                  : isOwn
+                    ? 'animate-message-in-right'
+                    : 'animate-message-in-left',
               )}
-              style={{ animationDelay: `${index * 0.02}s` }}
+              style={
+                // Cap the cascade: a 200-message history would otherwise take
+                // four seconds to finish arriving.
+                isHistory ? { animationDelay: `${Math.min(index, 12) * 0.02}s` } : undefined
+              }
             >
               {!isOwn && (
                 <div className="w-8">
                   {showAvatar && (
                     <Avatar className="w-8 h-8">
-<<<<<<< HEAD
-                      <AvatarImage src={photo} />
-=======
                       <AvatarImage src={photo} alt="" />
->>>>>>> 2335d4b (version 2.0)
                       <AvatarFallback className="text-xs">{otherUser.name?.[0]}</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
               )}
-<<<<<<< HEAD
               <div
                 className={cn(
-                  'max-w-[70%] px-4 py-2',
-                  isOwn ? 'message-sent' : 'message-received'
+                  'max-w-[70%] px-4 py-2 transition-transform duration-200 hover:scale-[1.02]',
+                  isOwn ? 'message-sent' : 'message-received',
                 )}
               >
-                <p>{message.content}</p>
-                <span className={cn(
-                  'text-[10px] block mt-1',
-                  isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                )}>
-=======
-              <div className={cn('max-w-[70%] px-4 py-2', isOwn ? 'message-sent' : 'message-received')}>
                 <p className="break-words">{message.content}</p>
                 <span
                   className={cn(
@@ -318,13 +269,15 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
                     isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground',
                   )}
                 >
->>>>>>> 2335d4b (version 2.0)
                   {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                 </span>
               </div>
             </div>
           )
         })}
+
+        {botTyping && <TypingBubble photo={photo} name={otherUser.name} />}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -335,20 +288,28 @@ export function ChatRoom({ matchId, currentUserId, otherUser, initialMessages }:
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1"
-<<<<<<< HEAD
-=======
+            className="flex-1 transition-shadow duration-200 focus-visible:shadow-md"
             maxLength={2000}
->>>>>>> 2335d4b (version 2.0)
             disabled={sending}
           />
           <Button
             type="submit"
             size="icon"
-            className="love-gradient text-primary-foreground border-0 shrink-0"
+            className={cn(
+              'love-gradient text-primary-foreground border-0 shrink-0 group',
+              // Only invite the tap once there's something to send.
+              'transition-all duration-200',
+              newMessage.trim() && !sending && 'scale-105 shadow-lg',
+            )}
             disabled={!newMessage.trim() || sending}
           >
-            <Send className="h-5 w-5" />
+            <Send
+              className={cn(
+                'h-5 w-5 transition-transform duration-200',
+                'group-hover:translate-x-0.5 group-hover:-translate-y-0.5',
+                sending && 'animate-pulse',
+              )}
+            />
           </Button>
         </div>
       </form>

@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-<<<<<<< HEAD
+  // WAS: ignoreBuildErrors: true
+  //
+  // That setting is why this project could be left with 50 unresolved git
+  // merge-conflict markers in 15 files and still "build". Type errors are
+  // the cheapest bug detector you have — let them fail the build.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  images: {
-    unoptimized: true,
-  },
-=======
   images: {
     unoptimized: true,
   },
@@ -42,7 +42,6 @@ const nextConfig = {
       },
     ]
   },
->>>>>>> 2335d4b (version 2.0)
 }
 
 export default nextConfig

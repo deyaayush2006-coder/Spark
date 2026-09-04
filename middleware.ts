@@ -5,7 +5,19 @@ export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request)
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/auth/login', '/auth/sign-up', '/auth/sign-up-success', '/auth/error', '/auth/callback']
+  // /terms and /privacy must be reachable while signed out: the sign-up form
+  // links to them, and a consent flow you cannot read before consenting is
+  // not consent.
+  const publicRoutes = [
+    '/',
+    '/terms',
+    '/privacy',
+    '/auth/login',
+    '/auth/sign-up',
+    '/auth/sign-up-success',
+    '/auth/error',
+    '/auth/callback',
+  ]
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname === route)
 
   // If user is not authenticated and trying to access protected route

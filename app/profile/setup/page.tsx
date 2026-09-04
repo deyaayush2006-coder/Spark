@@ -47,13 +47,6 @@ export default function ProfileSetupPage() {
       return
     }
 
-<<<<<<< HEAD
-    const newPhotos: string[] = []
-
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload only images')
-=======
     const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
@@ -65,42 +58,17 @@ export default function ProfileSetupPage() {
 
       if (file.size > MAX_FILE_SIZE) {
         toast.error(`${file.name}: image must be under 5MB`)
->>>>>>> 2335d4b (version 2.0)
         continue
       }
 
       const fileExt = file.name.split('.').pop()
-<<<<<<< HEAD
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`
-
-      const { error: uploadError, data } = await supabase.storage
-=======
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
->>>>>>> 2335d4b (version 2.0)
         .from('profile-photos')
         .upload(fileName, file)
 
       if (uploadError) {
-<<<<<<< HEAD
-        // If bucket doesn't exist, use URL directly
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newPhotos.push(e.target.result as string)
-            setPhotos(prev => [...prev, e.target!.result as string])
-          }
-        }
-        reader.readAsDataURL(file)
-      } else {
-        const { data: { publicUrl } } = supabase.storage
-          .from('profile-photos')
-          .getPublicUrl(fileName)
-        newPhotos.push(publicUrl)
-        setPhotos(prev => [...prev, publicUrl])
-      }
-=======
         // Do NOT fall back to embedding the raw image as a base64 data URL —
         // that used to bypass size limits entirely and would bloat every
         // profile row with megabytes of inline image data. Surface the real
@@ -114,7 +82,6 @@ export default function ProfileSetupPage() {
         .from('profile-photos')
         .getPublicUrl(fileName)
       setPhotos(prev => [...prev, publicUrl])
->>>>>>> 2335d4b (version 2.0)
     }
 
     setUploadingPhoto(false)

@@ -6,11 +6,7 @@ import { SwipeCard } from '@/components/swipe-card'
 import { MatchModal } from '@/components/match-modal'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-<<<<<<< HEAD
-import { Heart, Frown } from 'lucide-react'
-=======
 import { Heart } from 'lucide-react'
->>>>>>> 2335d4b (version 2.0)
 
 interface SwipeStackProps {
   profiles: Profile[]
@@ -22,31 +18,6 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null)
   const [showMatchModal, setShowMatchModal] = useState(false)
 
-<<<<<<< HEAD
-  const handleSwipe = useCallback(async (profile: Profile, direction: 'left' | 'right' | 'super') => {
-    const supabase = createClient()
-
-    // Record the swipe
-    const { error } = await supabase.from('swipes').insert({
-      swiper_id: currentUserId,
-      swiped_id: profile.id,
-      direction,
-    })
-
-    if (error) {
-      toast.error('Failed to record swipe')
-      return
-    }
-
-    // Check for match if it was a like
-    if (direction === 'right' || direction === 'super') {
-      const { data: match } = await supabase
-        .from('matches')
-        .select('*')
-        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
-        .or(`user1_id.eq.${profile.id},user2_id.eq.${profile.id}`)
-        .single()
-=======
   const handleSwipe = useCallback(
     async (profile: Profile, direction: 'left' | 'right' | 'super') => {
       const supabase = createClient()
@@ -90,23 +61,14 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
         .eq('user1_id', user1)
         .eq('user2_id', user2)
         .maybeSingle() // maybeSingle: "no match yet" is the normal case, not an error
->>>>>>> 2335d4b (version 2.0)
 
       if (match) {
         setMatchedProfile(profile)
         setShowMatchModal(true)
       }
-<<<<<<< HEAD
-    }
-
-    // Remove from stack
-    setStack(prev => prev.filter(p => p.id !== profile.id))
-  }, [currentUserId])
-=======
     },
     [currentUserId],
   )
->>>>>>> 2335d4b (version 2.0)
 
   if (stack.length === 0) {
     return (

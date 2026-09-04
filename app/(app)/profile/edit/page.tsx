@@ -49,11 +49,7 @@ export default function EditProfilePage() {
 
       const { data } = await supabase
         .from('profiles')
-<<<<<<< HEAD
-        .select('*')
-=======
         .select('id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at')
->>>>>>> 2335d4b (version 2.0)
         .eq('id', user.id)
         .single()
 
@@ -80,22 +76,6 @@ export default function EditProfilePage() {
     if (!files || files.length === 0) return
 
     setUploadingPhoto(true)
-<<<<<<< HEAD
-
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload only images')
-        continue
-      }
-
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setPhotos(prev => [...prev, e.target!.result as string])
-        }
-      }
-      reader.readAsDataURL(file)
-=======
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -138,7 +118,6 @@ export default function EditProfilePage() {
         .from('profile-photos')
         .getPublicUrl(fileName)
       setPhotos(prev => [...prev, publicUrl])
->>>>>>> 2335d4b (version 2.0)
     }
 
     setUploadingPhoto(false)
@@ -179,10 +158,7 @@ export default function EditProfilePage() {
         photos: photos,
         instagram_url: formData.instagramUrl || null,
         spotify_url: formData.spotifyUrl || null,
-<<<<<<< HEAD
-=======
         updated_at: new Date().toISOString(),
->>>>>>> 2335d4b (version 2.0)
       })
       .eq('id', profile.id)
 
@@ -207,7 +183,7 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center justify-between">
+      <header className="sticky top-0 md:top-20 z-40 bg-background/95 backdrop-blur-md border-b p-4 flex items-center justify-between">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/profile">
             <ArrowLeft className="h-5 w-5" />

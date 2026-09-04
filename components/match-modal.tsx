@@ -5,6 +5,7 @@ import { Profile } from '@/lib/types'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Heart, MessageCircle, Sparkles } from 'lucide-react'
+import { FloatingHearts } from '@/components/floating-hearts'
 
 interface MatchModalProps {
   open: boolean
@@ -23,6 +24,11 @@ export function MatchModal({ open, onClose, matchedProfile }: MatchModalProps) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md text-center p-0 overflow-hidden border-0">
         <div className="love-gradient p-8 relative">
+          {/* Hearts drifting up behind the card. This is the one moment in
+              the app worth celebrating, and it only lasts as long as the
+              modal is open. */}
+          <FloatingHearts className="absolute inset-0 opacity-70 text-white" />
+
           {/* Sparkles decoration */}
           <Sparkles className="absolute top-4 left-4 h-6 w-6 text-white/60 animate-sparkle" />
           <Sparkles className="absolute top-8 right-8 h-4 w-4 text-white/60 animate-sparkle" style={{ animationDelay: '0.5s' }} />
@@ -41,7 +47,13 @@ export function MatchModal({ open, onClose, matchedProfile }: MatchModalProps) {
                 <img
                   src={photo}
                   alt={matchedProfile.name}
-                  className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl"
+                  className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-xl animate-bounce-in"
+                  style={{ animationDelay: '0.15s' }}
+                />
+                {/* Ring pushing out from behind the photo on arrival. */}
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full border-4 border-white animate-pulse-ring"
                 />
                 <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
                   <Heart className="h-6 w-6 text-primary fill-primary animate-heartbeat" />
@@ -52,13 +64,13 @@ export function MatchModal({ open, onClose, matchedProfile }: MatchModalProps) {
             <div className="flex flex-col gap-3">
               <Button
                 size="lg"
-                className="bg-white text-primary hover:bg-white/90 font-semibold"
+                className="bg-white text-primary hover:bg-white/90 font-semibold transition-transform duration-200 hover:scale-105 shadow-lg group"
                 onClick={() => {
                   onClose()
                   router.push('/matches')
                 }}
               >
-                <MessageCircle className="mr-2 h-5 w-5" />
+                <MessageCircle className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
                 Send a Message
               </Button>
               <Button

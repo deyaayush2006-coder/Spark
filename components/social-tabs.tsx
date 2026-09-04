@@ -90,11 +90,7 @@ export function SocialTabs({
         sender_id: currentUserId,
         receiver_id: receiverId,
       })
-<<<<<<< HEAD
-      .select('*, receiver:profiles!friend_requests_receiver_id_fkey(*)')
-=======
       .select('*, receiver:profiles!friend_requests_receiver_id_fkey(id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at)')
->>>>>>> 2335d4b (version 2.0)
       .single()
 
     if (error) {
@@ -108,7 +104,7 @@ export function SocialTabs({
 
   return (
     <Tabs defaultValue="discover" className="p-4">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-4 [&>button]:press [&>button]:transition-all">
         <TabsTrigger value="discover">
           <Search className="h-4 w-4 md:mr-2" />
           <span className="hidden md:inline">Discover</span>
@@ -117,7 +113,7 @@ export function SocialTabs({
           <Heart className="h-4 w-4 md:mr-2" />
           <span className="hidden md:inline">Requests</span>
           {friendRequests.length > 0 && (
-            <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center love-gradient border-0">
+            <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center love-gradient border-0 animate-heartbeat">
               {friendRequests.length}
             </Badge>
           )}
@@ -299,11 +295,11 @@ function ProfileCard({
   
   return (
     <div 
-      className="flex items-center gap-3 p-3 rounded-xl bg-card border animate-slide-up"
+      className="flex items-center gap-3 p-3 rounded-xl bg-card border animate-slide-up hover-lift hover:shadow-md group"
       style={{ animationDelay: `${delay}s` }}
     >
       <Link href={`/profile/${profile.id}`}>
-        <Avatar className="w-14 h-14">
+        <Avatar className="w-14 h-14 transition-transform duration-200 group-hover:scale-105">
           <AvatarImage src={photo} />
           <AvatarFallback className="love-gradient text-primary-foreground">
             {profile.name?.[0]}

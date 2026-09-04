@@ -9,11 +9,7 @@ export default async function ViewProfilePage({ params }: { params: Promise<{ id
 
   const { data: profile } = await supabase
     .from('profiles')
-<<<<<<< HEAD
-    .select('*')
-=======
     .select('id, name, age, gender, interested_in, bio, location, occupation, interests, photos, instagram_url, spotify_url, is_verified, is_bot, created_at, updated_at')
->>>>>>> 2335d4b (version 2.0)
     .eq('id', id)
     .single()
 

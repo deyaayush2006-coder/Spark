@@ -18,7 +18,7 @@ export default function LandingPage() {
           <Button variant="ghost" asChild>
             <Link href="/auth/login">Log in</Link>
           </Button>
-          <Button asChild className="love-gradient text-primary-foreground border-0">
+          <Button asChild className="love-gradient text-primary-foreground border-0 transition-transform duration-200 hover:scale-105 hover:shadow-lg">
             <Link href="/auth/sign-up">Sign up</Link>
           </Button>
         </div>
@@ -35,13 +35,17 @@ export default function LandingPage() {
             Your love story starts here.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild className="love-gradient text-primary-foreground border-0 text-lg px-8 py-6">
+            <Button
+              size="lg"
+              asChild
+              className="love-gradient text-primary-foreground border-0 text-lg px-8 py-6 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl group"
+            >
               <Link href="/auth/sign-up">
-                <Sparkles className="mr-2 h-5 w-5" />
+                <Sparkles className="mr-2 h-5 w-5 group-hover:animate-sparkle" />
                 Get Started Free
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
+            <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6 transition-all duration-300 hover:scale-105">
               <Link href="/auth/login">
                 I have an account
               </Link>
@@ -73,15 +77,25 @@ export default function LandingPage() {
 
         {/* Stats */}
         <div className="flex flex-wrap justify-center gap-8 md:gap-16 mt-20">
-          <StatItem value="1M+" label="Active Users" />
-          <StatItem value="500K+" label="Matches Made" />
-          <StatItem value="100K+" label="Success Stories" />
+          <StatItem value="1M+" label="Active Users" delay="0s" />
+          <StatItem value="500K+" label="Matches Made" delay="0.12s" />
+          <StatItem value="100K+" label="Success Stories" delay="0.24s" />
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 text-center py-8 text-muted-foreground">
-        <p>&copy; 2024 Spark. Made with love.</p>
+      <footer className="relative z-10 text-center py-8 text-muted-foreground space-y-3">
+        <p className="text-sm">
+          <Link href="/terms" className="hover:text-primary transition-colors underline-offset-4 hover:underline">
+            Terms &amp; Conditions
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/privacy" className="hover:text-primary transition-colors underline-offset-4 hover:underline">
+            Privacy Policy
+          </Link>
+        </p>
+        <p className="text-sm">Spark is for adults aged 18 and over.</p>
+        <p>&copy; {new Date().getFullYear()} Spark. Made with love.</p>
       </footer>
     </div>
   )
@@ -100,10 +114,10 @@ function FeatureCard({
 }) {
   return (
     <div 
-      className="bg-card rounded-2xl p-6 shadow-sm border animate-slide-up"
+      className="bg-card rounded-2xl p-6 shadow-sm border animate-slide-up hover-lift hover:shadow-xl group"
       style={{ animationDelay: delay }}
     >
-      <div className="w-14 h-14 rounded-full love-gradient flex items-center justify-center text-primary-foreground mb-4">
+      <div className="w-14 h-14 rounded-full love-gradient flex items-center justify-center text-primary-foreground mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
         {icon}
       </div>
       <h3 className="text-xl font-serif font-semibold mb-2">{title}</h3>
@@ -112,9 +126,12 @@ function FeatureCard({
   )
 }
 
-function StatItem({ value, label }: { value: string; label: string }) {
+function StatItem({ value, label, delay = '0s' }: { value: string; label: string; delay?: string }) {
   return (
-    <div className="text-center animate-fade-in">
+    <div
+      className="text-center animate-bounce-in opacity-0 transition-transform duration-200 hover:scale-110"
+      style={{ animationDelay: delay }}
+    >
       <div className="text-3xl md:text-4xl font-serif font-bold love-gradient-text">{value}</div>
       <div className="text-muted-foreground">{label}</div>
     </div>

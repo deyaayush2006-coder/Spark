@@ -17,18 +17,21 @@ ON CONFLICT (id) DO UPDATE SET
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- Anyone can view profile photos (they're public-facing by nature)
+DROP POLICY IF EXISTS "profile_photos_public_read" ON storage.objects;
 CREATE POLICY "profile_photos_public_read" ON storage.objects
   FOR SELECT USING (bucket_id = 'profile-photos');
 
 -- Users can only upload into a folder named after their own user id
 -- (the app uploads to `${user.id}/...`), preventing one user from writing
 -- into — or overwriting — another user's photos.
+DROP POLICY IF EXISTS "profile_photos_insert_own_folder" ON storage.objects;
 CREATE POLICY "profile_photos_insert_own_folder" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'profile-photos'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "profile_photos_delete_own_folder" ON storage.objects;
 CREATE POLICY "profile_photos_delete_own_folder" ON storage.objects
   FOR DELETE USING (
     bucket_id = 'profile-photos'

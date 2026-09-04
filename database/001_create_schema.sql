@@ -115,14 +115,21 @@ ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;
 -- Profiles: any signed-in user can browse rows (needed for discovery), but
 -- see the GRANT/REVOKE block below — the `email` column is locked down
 -- separately at the column-privilege level, independent of this row policy.
+DROP POLICY IF EXISTS "profiles_select_all" ON public.profiles;
 CREATE POLICY "profiles_select_all" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
 CREATE POLICY "profiles_delete_own" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
 -- Swipes: users can only see/manage their own swipes
+DROP POLICY IF EXISTS "swipes_select_own" ON public.swipes;
 CREATE POLICY "swipes_select_own" ON public.swipes FOR SELECT USING (auth.uid() = swiper_id);
+DROP POLICY IF EXISTS "swipes_insert_own" ON public.swipes;
 CREATE POLICY "swipes_insert_own" ON public.swipes FOR INSERT WITH CHECK (auth.uid() = swiper_id);
+DROP POLICY IF EXISTS "swipes_delete_own" ON public.swipes;
 CREATE POLICY "swipes_delete_own" ON public.swipes FOR DELETE USING (auth.uid() = swiper_id);
 -- (No update policy: a swipe direction shouldn't be editable after the fact.)
 
@@ -130,11 +137,13 @@ CREATE POLICY "swipes_delete_own" ON public.swipes FOR DELETE USING (auth.uid() 
 -- insert/update/delete policy for regular clients — rows are created only by
 -- the SECURITY DEFINER trigger below, so a client can never fabricate a match
 -- with someone who never liked them back.
+DROP POLICY IF EXISTS "matches_select_own" ON public.matches;
 CREATE POLICY "matches_select_own" ON public.matches FOR SELECT
   USING (auth.uid() = user1_id OR auth.uid() = user2_id);
 
 -- Messages: only match participants can read; only the authenticated sender
 -- can insert as themselves; only participants can mark messages read.
+DROP POLICY IF EXISTS "messages_select_own" ON public.messages;
 CREATE POLICY "messages_select_own" ON public.messages FOR SELECT
   USING (
     EXISTS (
@@ -143,6 +152,7 @@ CREATE POLICY "messages_select_own" ON public.messages FOR SELECT
       AND (matches.user1_id = auth.uid() OR matches.user2_id = auth.uid())
     )
   );
+DROP POLICY IF EXISTS "messages_insert_own" ON public.messages;
 CREATE POLICY "messages_insert_own" ON public.messages FOR INSERT
   WITH CHECK (
     auth.uid() = sender_id
@@ -152,6 +162,7 @@ CREATE POLICY "messages_insert_own" ON public.messages FOR INSERT
       AND (matches.user1_id = auth.uid() OR matches.user2_id = auth.uid())
     )
   );
+DROP POLICY IF EXISTS "messages_update_own" ON public.messages;
 CREATE POLICY "messages_update_own" ON public.messages FOR UPDATE
   USING (
     EXISTS (
@@ -162,17 +173,23 @@ CREATE POLICY "messages_update_own" ON public.messages FOR UPDATE
   );
 
 -- Friend requests
+DROP POLICY IF EXISTS "friend_requests_select_own" ON public.friend_requests;
 CREATE POLICY "friend_requests_select_own" ON public.friend_requests FOR SELECT
   USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+DROP POLICY IF EXISTS "friend_requests_insert_own" ON public.friend_requests;
 CREATE POLICY "friend_requests_insert_own" ON public.friend_requests FOR INSERT
   WITH CHECK (auth.uid() = sender_id);
+DROP POLICY IF EXISTS "friend_requests_update_receiver" ON public.friend_requests;
 CREATE POLICY "friend_requests_update_receiver" ON public.friend_requests FOR UPDATE
   USING (auth.uid() = receiver_id);
 
 -- Followers
+DROP POLICY IF EXISTS "followers_select_all" ON public.followers;
 CREATE POLICY "followers_select_all" ON public.followers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "followers_insert_own" ON public.followers;
 CREATE POLICY "followers_insert_own" ON public.followers FOR INSERT
   WITH CHECK (auth.uid() = follower_id);
+DROP POLICY IF EXISTS "followers_delete_own" ON public.followers;
 CREATE POLICY "followers_delete_own" ON public.followers FOR DELETE
   USING (auth.uid() = follower_id);
 
@@ -277,5 +294,16 @@ CREATE TRIGGER trg_create_match_on_mutual_like
 -- REALTIME
 -- ============================================================================
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.matches;
+-- Wrapped in DO blocks: ADD TABLE raises if the table is already
+-- published, which would abort a re-run of this whole script.
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.matches;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

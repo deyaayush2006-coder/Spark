@@ -240,6 +240,32 @@ never from the request body.** If the client could name the room, anyone could
 request a token for any room and drop into a stranger's video call. Same reason
 the LiveKit API secret only ever lives on the server.
 
+### Phone-to-phone ringing needs a poll, not just Realtime — `components/incoming-call-listener.tsx` **(replaces)**, `components/call-room.tsx` **(replaces)**
+
+The original listener rang only on a Supabase Realtime INSERT event. That is a
+single point of failure, and on phones it fails constantly: mobile browsers
+suspend websockets when you switch apps, lock the screen, or hand off between
+wifi and mobile data. A dropped socket does not replay the events you missed —
+so the callee's page simply sat there while the caller stared at "Ringing…".
+It also failed silently, because `.subscribe()` was called with no status
+callback, so a `CHANNEL_ERROR` (the symptom of `calls` not being in the
+`supabase_realtime` publication) produced no message anywhere.
+
+Both sides now use realtime as the fast path and poll the same query every 3s
+as the floor, plus an immediate re-check on `visibilitychange`, `focus` and
+`online`. Ringing works even with realtime completely broken; it is just up to
+3s slower. Rows older than 60s are ignored so a stale `missed` call cannot ring
+on page load, and `.subscribe()` now logs the channel status.
+
+To check whether realtime itself is healthy, run this in the Supabase SQL editor:
+
+```sql
+select tablename from pg_publication_tables where pubname = 'supabase_realtime';
+-- expect: messages, matches, calls
+alter publication supabase_realtime add table public.calls;  -- if calls is missing
+alter table public.calls replica identity full;              -- reliable UPDATE events under RLS
+```
+
 ### Known limitation
 
 Calls only ring while the app is open in a browser tab. Ringing a closed app

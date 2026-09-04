@@ -25,7 +25,7 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
         </p>
         <Link 
           href="/discover"
-          className="mt-6 px-6 py-3 love-gradient text-primary-foreground rounded-full font-medium"
+          className="mt-6 px-6 py-3 love-gradient text-primary-foreground rounded-full font-medium press transition-transform duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
         >
           <Heart className="inline-block mr-2 h-5 w-5" />
           Start Swiping
@@ -51,18 +51,18 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
               <Link
                 key={match.id}
                 href={`/matches/${match.id}`}
-                className="flex flex-col items-center gap-2 animate-slide-up"
+                className="flex flex-col items-center gap-2 animate-slide-up press group"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="relative">
-                  <Avatar className="w-20 h-20 border-2 border-primary">
+                  <Avatar className="w-20 h-20 border-2 border-primary transition-transform duration-200 group-hover:scale-105">
                     <AvatarImage src={match.profile?.photos?.[0]} />
                     <AvatarFallback className="love-gradient text-primary-foreground text-2xl">
                       {match.profile?.name?.[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                    <Heart className="h-3 w-3 text-primary-foreground fill-primary-foreground" />
+                    <Heart className="h-3 w-3 text-primary-foreground fill-primary-foreground animate-heartbeat" />
                   </div>
                 </div>
                 <span className="text-sm font-medium">{match.profile?.name?.split(' ')[0]}</span>
@@ -83,7 +83,7 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
               <Link
                 key={match.id}
                 href={`/matches/${match.id}`}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors animate-slide-up"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary animate-slide-up hover-lift"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className="relative">
@@ -93,14 +93,18 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
                       {match.profile?.name?.[0]}
                     </AvatarFallback>
                   </Avatar>
-<<<<<<< HEAD
-                  {match.unreadCount > 0 && (
-=======
                   {(match.unreadCount ?? 0) > 0 && (
->>>>>>> 2335d4b (version 2.0)
-                    <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center love-gradient border-0">
-                      {match.unreadCount}
-                    </Badge>
+                    <>
+                      {/* A ring that keeps expanding out of the badge, so an
+                          unread count is visible from the corner of the eye. */}
+                      <span
+                        aria-hidden
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full love-gradient animate-pulse-ring"
+                      />
+                      <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center love-gradient border-0 animate-pop-in">
+                        {match.unreadCount}
+                      </Badge>
+                    </>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -113,11 +117,7 @@ export function MatchList({ matches, currentUserId }: MatchListProps) {
                     )}
                   </div>
                   {match.lastMessage && (
-<<<<<<< HEAD
-                    <p className={`text-sm truncate ${match.unreadCount > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-=======
                     <p className={`text-sm truncate ${(match.unreadCount ?? 0) > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
->>>>>>> 2335d4b (version 2.0)
                       {match.lastMessage.sender_id === currentUserId ? 'You: ' : ''}
                       {match.lastMessage.content}
                     </p>

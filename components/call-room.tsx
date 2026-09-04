@@ -74,27 +74,47 @@ export function CallRoom({ callId, matchId, kind, otherUser, isCaller }: CallRoo
     [callId, matchId, router],
   )
 
-  // If the *other* side hangs up (or declines), leave too.
+  // If the *other* side hangs up, declines, or answers, react to it.
+  //
+  // Realtime is the fast path, but the same mobile problem as the incoming
+  // call listener applies here: a phone that switches network or sleeps for a
+  // moment drops the websocket, and the UPDATE event is then lost forever —
+  // leaving this side stuck on "Ringing…" after the other person hung up. So
+  // the status is also polled.
   useEffect(() => {
     const supabase = createClient()
+    let left = false
+
+    const handle = (status: string) => {
+      if (left) return
+      if (status === 'declined') {
+        left = true
+        toast.info(`${otherUser.name} declined the call`)
+        router.replace(`/matches/${matchId}`)
+      } else if (status === 'ended' || status === 'missed') {
+        left = true
+        router.replace(`/matches/${matchId}`)
+      }
+    }
+
     const channel = supabase
       .channel(`call:${callId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'calls', filter: `id=eq.${callId}` },
-        (payload) => {
-          const status = (payload.new as { status: string }).status
-          if (status === 'declined') {
-            toast.info(`${otherUser.name} declined the call`)
-            router.replace(`/matches/${matchId}`)
-          } else if (status === 'ended' || status === 'missed') {
-            router.replace(`/matches/${matchId}`)
-          }
-        },
+        (payload) => handle((payload.new as { status: string }).status),
       )
       .subscribe()
 
+    const poll = setInterval(async () => {
+      if (left || document.hidden) return
+      const { data } = await supabase.from('calls').select('status').eq('id', callId).maybeSingle()
+      if (data) handle(data.status)
+    }, 3_000)
+
     return () => {
+      left = true
+      clearInterval(poll)
       supabase.removeChannel(channel)
     }
   }, [callId, matchId, otherUser.name, router])
