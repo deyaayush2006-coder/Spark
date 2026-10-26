@@ -229,14 +229,15 @@ AS $$
         + 0.2 * (COALESCE(cardinality(pool.interests), 0) > 0)::INT
       ) AS quality,
       1.0 - LEAST(ABS(pool.age - me.age), 10) / 10.0 AS age_fit,
-      (me.loc IS NOT NULL AND me.loc = NULLIF(lower(trim(pool.location)), ''))::INT AS same_loc,
+      -- COALESCE: comparing against a NULL location is NULL, not false.
+      COALESCE(me.loc = NULLIF(lower(trim(pool.location)), ''), FALSE)::INT AS same_loc,
       -- 1.0 if active right now, ~0.37 after 3 days, ~0 after a few weeks.
       EXP(
-        -GREATEST(EXTRACT(EPOCH FROM (NOW() - COALESCE(pool.last_active_at, pool.created_at))), 0)
+        -GREATEST(EXTRACT(EPOCH FROM (NOW() - COALESCE(pool.last_active_at, pool.created_at, NOW()))), 0)
         / (72 * 3600.0)
       ) AS activity,
       -- New-member boost that fades out over their first week.
-      GREATEST(0.0, 1.0 - EXTRACT(EPOCH FROM (NOW() - pool.created_at)) / (7 * 86400.0)) AS newness,
+      GREATEST(0.0, 1.0 - EXTRACT(EPOCH FROM (NOW() - COALESCE(pool.created_at, NOW()))) / (7 * 86400.0)) AS newness,
       me.ints AS my_ints,
       me.quality AS my_quality
     FROM pool
@@ -276,6 +277,8 @@ AS $$
     FROM scored
   ),
 
+  -- Every term below must be non-NULL: one NULL makes the whole score
+  -- NULL, and NULL scores all sort to the bottom in random order.
   ranked AS (
     SELECT
       directional.*,
@@ -283,10 +286,10 @@ AS $$
         0.55 * (2 * u_me * u_them / NULLIF(u_me + u_them, 0))  -- reciprocal (harmonic mean)
         + 0.20 * activity
         + 0.08 * newness
-        + 0.08 * (their_swipe IN ('right', 'super'))::INT          -- a like back is a guaranteed match
+        + 0.08 * COALESCE(their_swipe IN ('right', 'super'), FALSE)::INT  -- a like back is a guaranteed match
         + 0.12 * random()
         - 0.10 * LEAST(LN(1 + pending_likes) / LN(51), 1)       -- attention balancing
-        - 0.35 * is_bot::INT                                     -- real people before test bots
+        - 0.35 * COALESCE(is_bot, FALSE)::INT                     -- real people before test bots
       ) AS score
     FROM directional
   )
