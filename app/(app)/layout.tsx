@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { BottomNav } from '@/components/bottom-nav'
 import { IncomingCallListener } from '@/components/incoming-call-listener'
+import { PushRegistrar } from '@/components/push-registrar'
+import { ActivityHeartbeat } from '@/components/activity-heartbeat'
 import { AppShell } from '@/components/app-shell'
 
 export default async function AppLayout({
@@ -42,6 +44,9 @@ export default async function AppLayout({
       {/* Mounted once for the whole signed-in app so an incoming call can
           interrupt whatever page the user is on. */}
       <IncomingCallListener currentUserId={user.id} />
+      {/* Lets a call ring this device while Spark is closed or hidden. */}
+      <PushRegistrar />
+      <ActivityHeartbeat />
     </>
   )
 }

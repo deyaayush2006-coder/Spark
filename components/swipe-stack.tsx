@@ -1,22 +1,54 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Profile } from '@/lib/types'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import type { DiscoverProfile, Profile } from '@/lib/types'
 import { SwipeCard } from '@/components/swipe-card'
 import { MatchModal } from '@/components/match-modal'
 import { createClient } from '@/lib/supabase/client'
+import { fetchDiscoverDeck } from '@/lib/discover'
 import { toast } from 'sonner'
-import { Heart } from 'lucide-react'
+import { Heart, Loader2 } from 'lucide-react'
 
 interface SwipeStackProps {
-  profiles: Profile[]
+  profiles: DiscoverProfile[]
   currentUserId: string
 }
+
+/** Fetch the next page when this few cards are left, so the deck never visibly runs dry. */
+const REFILL_AT = 5
 
 export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
   const [stack, setStack] = useState(profiles)
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null)
   const [showMatchModal, setShowMatchModal] = useState(false)
+  const [refilling, setRefilling] = useState(false)
+  // True once the server returns an empty page: there really is nobody left.
+  const [exhausted, setExhausted] = useState(profiles.length === 0)
+
+  // Every id this session has shown, swiped or not. Sent as the exclusion
+  // list so a refill can't hand back a card whose swipe is still in flight.
+  const seenRef = useRef<Set<string>>(new Set(profiles.map((p) => p.id)))
+  const refillingRef = useRef(false)
+
+  const refill = useCallback(async () => {
+    if (refillingRef.current) return
+    refillingRef.current = true
+    setRefilling(true)
+    try {
+      const next = await fetchDiscoverDeck(createClient(), currentUserId, [...seenRef.current])
+      const fresh = next.filter((p) => !seenRef.current.has(p.id))
+      fresh.forEach((p) => seenRef.current.add(p.id))
+      if (fresh.length === 0) setExhausted(true)
+      setStack((prev) => [...prev, ...fresh])
+    } finally {
+      refillingRef.current = false
+      setRefilling(false)
+    }
+  }, [currentUserId])
+
+  useEffect(() => {
+    if (!exhausted && stack.length <= REFILL_AT) void refill()
+  }, [stack.length, exhausted, refill])
 
   const handleSwipe = useCallback(
     async (profile: Profile, direction: 'left' | 'right' | 'super') => {
@@ -48,10 +80,7 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
       // going to be created it exists by now.
       //
       // The match row always stores the two ids as LEAST/GREATEST, so look it
-      // up by that exact pair. The previous version chained two .or() calls,
-      // which PostgREST ANDs into a much looser condition — it could match a
-      // completely unrelated match row involving either person and pop the
-      // "It's a match!" modal for the wrong profile.
+      // up by that exact pair.
       const [user1, user2] =
         currentUserId < profile.id ? [currentUserId, profile.id] : [profile.id, currentUserId]
 
@@ -71,6 +100,13 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
   )
 
   if (stack.length === 0) {
+    if (refilling) {
+      return (
+        <div className="flex min-h-[60vh] items-center justify-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      )
+    }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-fade-in">
         <div className="w-24 h-24 rounded-full love-gradient flex items-center justify-center mb-6 animate-float">
@@ -78,7 +114,7 @@ export function SwipeStack({ profiles, currentUserId }: SwipeStackProps) {
         </div>
         <h2 className="text-2xl font-serif font-bold mb-2">No more profiles</h2>
         <p className="text-muted-foreground max-w-sm">
-          {"You've seen everyone for now! Check back later for new potential matches."}
+          {"You've seen everyone who fits your preferences for now. Check back later, or widen your age range in your profile."}
         </p>
       </div>
     )

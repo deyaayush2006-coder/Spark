@@ -3,16 +3,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Plus, X, Loader2, Instagram, Music, Save } from 'lucide-react'
+import { ArrowLeft, Camera, Plus, X, Loader2, Instagram, Music, Save, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Slider } from '@/components/ui/slider'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Profile } from '@/lib/types'
+
+/** Age-range slider bounds. The ends mean "no limit" and are stored as NULL. */
+const AGE_FLOOR = 18
+const AGE_CEILING = 60
 
 const SUGGESTED_INTERESTS = [
   'Travel', 'Music', 'Movies', 'Cooking', 'Fitness', 'Art', 'Reading', 'Gaming',
@@ -36,6 +41,9 @@ export default function EditProfilePage() {
   })
   const [interests, setInterests] = useState<string[]>([])
   const [photos, setPhotos] = useState<string[]>([])
+  const [ageRange, setAgeRange] = useState<[number, number]>([AGE_FLOOR, AGE_CEILING])
+  // False until database/009 has added the preference columns.
+  const [prefsSupported, setPrefsSupported] = useState(false)
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -64,6 +72,18 @@ export default function EditProfilePage() {
         })
         setInterests(data.interests || [])
         setPhotos(data.photos || [])
+      }
+
+      // Separate query: if the preference columns don't exist yet the rest
+      // of the page must still load.
+      const { data: prefs, error: prefsError } = await supabase
+        .from('profiles')
+        .select('min_age_pref, max_age_pref')
+        .eq('id', user.id)
+        .single()
+      if (!prefsError && prefs) {
+        setPrefsSupported(true)
+        setAgeRange([prefs.min_age_pref ?? AGE_FLOOR, prefs.max_age_pref ?? AGE_CEILING])
       }
       setLoading(false)
     }
@@ -166,6 +186,18 @@ export default function EditProfilePage() {
       toast.error(error.message)
       setSaving(false)
       return
+    }
+
+    if (prefsSupported) {
+      const [min, max] = ageRange
+      const { error: prefsError } = await supabase
+        .from('profiles')
+        .update({
+          min_age_pref: min <= AGE_FLOOR ? null : min,
+          max_age_pref: max >= AGE_CEILING ? null : max,
+        })
+        .eq('id', profile.id)
+      if (prefsError) toast.error(`Age range not saved: ${prefsError.message}`)
     }
 
     toast.success('Profile updated!')
@@ -331,6 +363,39 @@ export default function EditProfilePage() {
             <p className="text-xs text-muted-foreground mt-3">{interests.length}/10 selected</p>
           </CardContent>
         </Card>
+
+        {/* Dealbreakers. Applied both ways: you only see people in your range
+            who also have you in theirs (database/009). */}
+        {prefsSupported && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <SlidersHorizontal className="h-5 w-5 text-primary" />
+                Who you want to meet
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <Label>Age range</Label>
+                <span className="font-medium tabular-nums">
+                  {ageRange[0]} – {ageRange[1] >= AGE_CEILING ? `${AGE_CEILING}+` : ageRange[1]}
+                </span>
+              </div>
+              <Slider
+                min={AGE_FLOOR}
+                max={AGE_CEILING}
+                step={1}
+                minStepsBetweenThumbs={1}
+                value={ageRange}
+                onValueChange={(v) => setAgeRange([v[0], v[1]] as [number, number])}
+                aria-label="Age range"
+              />
+              <p className="text-xs text-muted-foreground">
+                You’ll only see people in this range who would also want to see someone your age.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Social */}
         <Card>

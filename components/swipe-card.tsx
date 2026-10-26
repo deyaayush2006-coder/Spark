@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect, CSSProperties } from 'react'
-import { Profile } from '@/lib/types'
-import { Heart, X, Star, MapPin, Briefcase, Instagram, Music, ChevronLeft, ChevronRight } from 'lucide-react'
+import type { DiscoverProfile, Profile } from '@/lib/types'
+import { Heart, X, Star, MapPin, Briefcase, Instagram, Music, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 interface SwipeCardProps {
-  profile: Profile
+  profile: DiscoverProfile
   onSwipe: (profile: Profile, direction: 'left' | 'right' | 'super') => void
   isTop: boolean
   style?: CSSProperties
@@ -44,6 +44,8 @@ export function SwipeCard({ profile, onSwipe, isTop, style }: SwipeCardProps) {
   // a specific woman - shown under every such profile's name and age, for
   // every gender. Use the neutral local placeholder instead.
   const photos = profile.photos?.length ? profile.photos : ['/placeholder-user.jpg']
+  const shared = profile.shared_interests ?? []
+  const sharedSet = new Set(shared)
 
   // 0 to 1 as the card is dragged toward either edge.
   const intent = Math.min(Math.abs(dragX) / INDICATOR_RANGE, 1)
@@ -213,6 +215,15 @@ export function SwipeCard({ profile, onSwipe, isTop, style }: SwipeCardProps) {
           </>
         )}
 
+        {/* A super like is meant to be seen — that's the whole point of
+            spending one. Ordinary likes are never revealed on the card. */}
+        {profile.super_liked_you && (
+          <div className="absolute left-4 top-8 flex items-center gap-1.5 rounded-full bg-sky-500 px-3 py-1 text-sm font-semibold text-white shadow-lg animate-pop-in">
+            <Star className="h-4 w-4 fill-white" />
+            Super liked you
+          </div>
+        )}
+
         {/* Swipe indicators.
             These used to flip between opacity 0 and 1 at a fixed 50px, so the
             card gave no feedback at all until it suddenly gave all of it.
@@ -247,7 +258,7 @@ export function SwipeCard({ profile, onSwipe, isTop, style }: SwipeCardProps) {
 
         {/* Profile info overlay */}
         <div
-          className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 cursor-pointer transition-all duration-300"
+          className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pb-32 cursor-pointer transition-all duration-300"
           onClick={() => setShowDetails(!showDetails)}
         >
           <div className="text-white">
@@ -272,6 +283,19 @@ export function SwipeCard({ profile, onSwipe, isTop, style }: SwipeCardProps) {
               </p>
             )}
 
+            {/* Why this card is here. Shared interests are the best
+                conversation starter there is, so they're visible without
+                tapping for details. */}
+            {shared.length > 0 && (
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-white/90">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  You both like {shared.slice(0, 3).join(', ')}
+                  {shared.length > 3 && ` +${shared.length - 3}`}
+                </span>
+              </p>
+            )}
+
             {showDetails && (
               <div className="mt-4 space-y-3 animate-slide-up">
                 {profile.bio && (
@@ -286,7 +310,12 @@ export function SwipeCard({ profile, onSwipe, isTop, style }: SwipeCardProps) {
                         variant="secondary"
                         // Staggered so the tags cascade in rather than
                         // appearing as one block.
-                        className="bg-white/20 text-white border-0 animate-pop-in opacity-0 transition-transform hover:scale-105"
+                        className={cn(
+                          'border-0 animate-pop-in opacity-0 transition-transform hover:scale-105',
+                          sharedSet.has(interest)
+                            ? 'bg-white text-primary font-semibold'
+                            : 'bg-white/20 text-white',
+                        )}
                         style={{ animationDelay: `${0.05 + i * 0.04}s` }}
                       >
                         {interest}
@@ -325,9 +354,11 @@ export function SwipeCard({ profile, onSwipe, isTop, style }: SwipeCardProps) {
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons. Pinned to the bottom of the card, under the name and
+          details (the info overlay leaves room for them with pb-32). They
+          used to float at bottom-24, right on top of the person's name. */}
       {isTop && (
-        <div className="absolute bottom-24 inset-x-0 flex items-center justify-center gap-4 p-4">
+        <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-4 p-4">
           <div className="relative">
             {burst === 'left' && (
               <span

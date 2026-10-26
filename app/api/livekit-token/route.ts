@@ -13,12 +13,62 @@ import { createClient } from '@/lib/supabase/server'
  *  - RLS on `calls` already restricts SELECT to the two participants, so if
  *    the row comes back at all the caller is authorised. We re-check the ids
  *    anyway, because defence in depth costs three lines.
- *  - Tokens are short-lived (15 min) and scoped to that single room.
+ *  - Tokens are short-lived and scoped to that single room. LiveKit refreshes
+ *    tokens for connected participants itself, so a long call doesn't drop
+ *    when this one expires.
  */
+
+/**
+ * "Calls work between my own phone and laptop but not with anyone far away"
+ * is the textbook symptom of pointing the app at a LiveKit server on your
+ * own machine or Wi-Fi (e.g. `livekit-server --dev`). Devices on the same
+ * network can reach it; nobody else can, and browsers block a plain ws://
+ * server from an https:// page outright. Say so plainly instead of letting
+ * the call hang on "Connecting…".
+ */
+function diagnoseLiveKitUrl(url: string): { fatal: boolean; message: string } | null {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return { fatal: true, message: `NEXT_PUBLIC_LIVEKIT_URL ("${url}") is not a valid URL. It should look like wss://your-project.livekit.cloud` }
+  }
+
+  const host = parsed.hostname
+  const isPrivate =
+    host === 'localhost' ||
+    host.endsWith('.local') ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    host === '0.0.0.0'
+
+  if (isPrivate) {
+    return {
+      fatal: process.env.NODE_ENV === 'production',
+      message:
+        `NEXT_PUBLIC_LIVEKIT_URL points at ${host}, a server on your own machine or Wi-Fi. ` +
+        'Only devices on that same network can reach it, which is why calls work between your own ' +
+        'devices and fail for everyone else. Use a LiveKit Cloud URL (wss://<project>.livekit.cloud) ' +
+        'or a public server with TURN enabled.',
+    }
+  }
+  if (parsed.protocol !== 'wss:') {
+    return {
+      fatal: process.env.NODE_ENV === 'production',
+      message:
+        `NEXT_PUBLIC_LIVEKIT_URL uses ${parsed.protocol}// — browsers block unencrypted ws:// from an https:// page. ` +
+        'Use the wss:// URL.',
+    }
+  }
+  return null
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.LIVEKIT_API_KEY
   const apiSecret = process.env.LIVEKIT_API_SECRET
-  const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL
+  const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL?.trim()
 
   if (!apiKey || !apiSecret || !wsUrl) {
     return NextResponse.json(
@@ -28,6 +78,12 @@ export async function POST(request: Request) {
       },
       { status: 503 },
     )
+  }
+
+  const problem = diagnoseLiveKitUrl(wsUrl)
+  if (problem) {
+    console.warn(`[livekit] ${problem.message}`)
+    if (problem.fatal) return NextResponse.json({ error: problem.message }, { status: 503 })
   }
 
   let callId: unknown
@@ -53,7 +109,7 @@ export async function POST(request: Request) {
 
   const { data: call } = await supabase
     .from('calls')
-    .select('id, caller_id, callee_id, room_name, status, kind')
+    .select('id, caller_id, callee_id, room_name, status, kind, created_at')
     .eq('id', callId)
     .single()
 
@@ -66,7 +122,21 @@ export async function POST(request: Request) {
   }
 
   if (call.status !== 'ringing' && call.status !== 'accepted') {
-    return NextResponse.json({ error: `This call has already ${call.status}` }, { status: 409 })
+    const label: Record<string, string> = {
+      declined: 'was declined',
+      ended: 'has ended',
+      missed: 'was missed',
+    }
+    return NextResponse.json(
+      { error: `This call ${label[call.status] ?? 'is over'}.` },
+      { status: 409 },
+    )
+  }
+
+  // A call nobody answered for a minute is over, even if the caller's tab
+  // died before it could say so.
+  if (call.status === 'ringing' && Date.now() - new Date(call.created_at).getTime() > 60_000) {
+    return NextResponse.json({ error: 'This call was missed.' }, { status: 409 })
   }
 
   // Display name shown to the other participant in the call UI.
@@ -79,7 +149,7 @@ export async function POST(request: Request) {
   const at = new AccessToken(apiKey, apiSecret, {
     identity: user.id,
     name: profile?.name ?? 'Someone',
-    ttl: '15m',
+    ttl: '30m',
   })
 
   at.addGrant({
@@ -97,5 +167,6 @@ export async function POST(request: Request) {
     token: await at.toJwt(),
     serverUrl: wsUrl,
     kind: call.kind,
+    warning: problem?.message,
   })
 }

@@ -14,6 +14,18 @@ Handler as a minimal backend endpoint.
 1. `001_create_schema.sql`
 2. `002_seed_dummy_profiles.sql` (optional — adds bot profiles for testing)
 3. `004_storage_setup.sql`
+4. `005_calls_blocks_reports.sql`
+5. `006_match_summaries.sql`
+6. `007_lock_down_message_edits.sql`
+7. `008_reliable_calls_and_push.sql` — ringing that uses the database clock,
+   stale-call cleanup, stricter call state rules, and storage for Web Push
+   call alerts
+8. `009_ranked_discovery.sql` — the ranked, two-way Discover deck, age range
+   preferences and the activity heartbeat
+
+Every file from 005 on is safe to re-run. The app keeps working (with the
+older behaviour) if 008 or 009 is missing, and logs a console warning naming
+the file to run.
 
 **Existing project that already ran the old `scripts/001_create_schema.sql`:**
 1. `003_migration_fix_existing_deployment.sql`

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { MatchList } from '@/components/match-list'
+import { CallAlertsCard } from '@/components/call-alerts-card'
 import type { MatchWithProfile, Profile } from '@/lib/types'
 
 interface MatchSummaryRow {
@@ -80,6 +81,8 @@ export default async function MatchesPage() {
       <header className="sticky top-0 md:top-20 z-40 bg-background/95 backdrop-blur-md border-b p-4">
         <h1 className="text-2xl font-serif font-bold text-center love-gradient-text">Matches</h1>
       </header>
+
+      {matches.length > 0 && <CallAlertsCard />}
 
       <MatchList matches={matches} currentUserId={user.id} />
     </div>

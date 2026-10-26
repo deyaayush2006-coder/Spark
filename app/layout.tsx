@@ -18,6 +18,16 @@ export const metadata: Metadata = {
   title: 'Spark - Find Your Match',
   description: 'A modern dating app to find meaningful connections. Swipe, match, and chat with people who share your interests.',
   keywords: ['dating', 'relationships', 'love', 'match', 'connections'],
+  icons: {
+    icon: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+  },
+  // Home Screen install on iPhone — required there for call notifications.
+  appleWebApp: {
+    capable: true,
+    title: 'Spark',
+    statusBarStyle: 'default',
+  },
 }
 
 export const viewport: Viewport = {

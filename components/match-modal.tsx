@@ -18,7 +18,9 @@ export function MatchModal({ open, onClose, matchedProfile }: MatchModalProps) {
 
   if (!matchedProfile) return null
 
-  const photo = matchedProfile.photos?.[0] || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'
+  // Was a hard-coded Unsplash photo of a specific woman for every photoless
+  // match, whatever their gender. Same neutral placeholder as the swipe card.
+  const photo = matchedProfile.photos?.[0] || '/placeholder-user.jpg'
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

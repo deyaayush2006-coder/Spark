@@ -19,6 +19,18 @@ export interface Profile {
   is_bot: boolean
   created_at: string
   updated_at: string
+  // Age range this person wants to see (database/009). NULL = no limit.
+  // Optional because most queries don't select them.
+  min_age_pref?: number | null
+  max_age_pref?: number | null
+}
+
+/** A card in the Discover deck, as returned by get_discover_profiles(). */
+export interface DiscoverProfile extends Profile {
+  /** Interests you both listed, in their spelling. */
+  shared_interests?: string[] | null
+  /** They super liked you — shown on the card, like on Tinder. */
+  super_liked_you?: boolean | null
 }
 
 export interface Swipe {

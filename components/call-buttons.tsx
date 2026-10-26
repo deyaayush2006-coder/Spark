@@ -5,20 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Phone, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { notifyCallee, randomId } from '@/lib/calls'
 import { toast } from 'sonner'
-
-/**
- * Room ids must be unguessable. Prefer the platform RNG, but fall back to
- * getRandomValues so this also works outside a secure context.
- */
-function randomId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-}
 
 interface CallButtonsProps {
   matchId: string
@@ -36,7 +24,14 @@ export function CallButtons({ matchId, currentUserId, otherUserId, disabled }: C
     if (starting || disabled) return
     setStarting(true)
 
-    const supabase = createClient()
+    // getUserMedia only exists in a secure context (HTTPS or localhost).
+    // Opening the app at http://192.168.x.x on a phone hides it entirely,
+    // which used to surface as a baffling "permission denied".
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      toast.error('Calls need a secure (https://) connection. Open Spark from its https address.')
+      setStarting(false)
+      return
+    }
 
     // Ask for mic/camera permission BEFORE creating the call row, so we don't
     // ring the other person only to fail on a denied permission prompt.
@@ -47,23 +42,24 @@ export function CallButtons({ matchId, currentUserId, otherUserId, disabled }: C
       })
       // Release the devices immediately; LiveKit acquires its own.
       stream.getTracks().forEach((t) => t.stop())
-    } catch {
+    } catch (err) {
+      const name = (err as DOMException)?.name
       toast.error(
-        kind === 'video'
-          ? 'Camera and microphone access is needed for video calls'
-          : 'Microphone access is needed for voice calls',
+        name === 'NotFoundError'
+          ? kind === 'video'
+            ? 'No camera or microphone found on this device'
+            : 'No microphone found on this device'
+          : name === 'NotReadableError'
+            ? 'Your camera or microphone is being used by another app'
+            : kind === 'video'
+              ? 'Camera and microphone access is needed for video calls'
+              : 'Microphone access is needed for voice calls',
       )
       setStarting(false)
       return
     }
 
-    // crypto.randomUUID() only exists in a "secure context" — HTTPS, or
-    // localhost. If you test on a phone over http://192.168.x.x it is
-    // undefined and this would throw. (Note that getUserMedia above has the
-    // same restriction, so plain-HTTP LAN testing can't do calls at all —
-    // use a tunnel like `npx localtunnel` or deploy to Vercel.)
-    const roomName = `call_${randomId()}`
-
+    const supabase = createClient()
     const { data, error } = await supabase
       .from('calls')
       .insert({
@@ -71,7 +67,7 @@ export function CallButtons({ matchId, currentUserId, otherUserId, disabled }: C
         caller_id: currentUserId,
         callee_id: otherUserId,
         kind,
-        room_name: roomName,
+        room_name: `call_${randomId()}`,
       })
       .select('id')
       .single()
@@ -84,6 +80,8 @@ export function CallButtons({ matchId, currentUserId, otherUserId, disabled }: C
       return
     }
 
+    // Rings their phone even if Spark is closed or in the background.
+    notifyCallee(data.id)
     router.push(`/matches/${matchId}/call/${data.id}`)
   }
 
